@@ -1,0 +1,198 @@
+1. DML
+SELECT EmpName, JobTitle
+FROM Employee
+WHERE DeptID = (
+    SELECT DeptID FROM Department
+    WHERE DeptName='IT'
+);
+UPDATE Employee
+SET Salary=Salary+2000
+WHERE DeptID = (
+    SELECT DeptID FROM Department
+    WHERE DeptName='IT'
+);
+DELETE FROM Employee
+WHERE EmpID=&EmpID;
+SELECT D.DeptName, COUNT(E.EmpID) AS TotalEmployees
+FROM Department D, Employee E
+WHERE D.DeptID=E.DeptID
+GROUP BY D.DeptName;
+2. TCL
+SELECT * FROM Student;
+COMMIT;
+SAVEPOINT SP1;
+ROLLBACK TO SP1;
+SELECT * FROM Student;
+COMMIT;
+3. Simple & Nested Queries
+SELECT * FROM Student1;
+SELECT Name, Department
+FROM Student1;
+SELECT *
+FROM Student1
+WHERE Department='CSE';
+SELECT Name, Marks
+FROM Student1
+WHERE Marks>80;
+SELECT Name, Marks
+FROM Student1
+WHERE Marks>(SELECT AVG(Marks) FROM Student1);
+SELECT Name, Department
+FROM Student1
+WHERE Department=(
+    SELECT Department
+    FROM Student1
+    WHERE Name='Arun'
+);
+SELECT *
+FROM Student1
+WHERE Marks=(SELECT MAX(Marks) FROM Student1);
+SELECT *
+FROM Student1
+WHERE Age>(SELECT MIN(Age) FROM Student1);
+4. Joins-- INNER JOIN
+SELECT E.EmpName, D.DeptName, D.Location
+FROM Employee123 E
+INNER JOIN Department123 D
+ON E.DeptID=D.DeptID;-- LEFT JOIN
+SELECT E.EmpName, D.DeptName
+FROM Employee123 E
+LEFT JOIN Department123 D
+ON E.DeptID=D.DeptID;-- RIGHT JOIN
+SELECT E.EmpName, D.DeptName
+FROM Employee123 E
+RIGHT JOIN Department123 D
+ON E.DeptID=D.DeptID;-- FULL JOIN
+SELECT E.EmpName, D.DeptName
+FROM Employee123 E
+LEFT JOIN Department123 D
+ON E.DeptID=D.DeptID
+UNION
+SELECT E.EmpName, D.DeptName
+FROM Employee123 E
+RIGHT JOIN Department123 D
+ON E.DeptID=D.DeptID;-- SELF JOIN
+SELECT e1.EmpName, e2.EmpName AS Colleague
+FROM Employee123 e1, Employee123 e2
+WHERE e1.DeptID=e2.DeptID
+AND e1.EmpID!=e2.EmpID;-- CARTESIAN JOIN
+SELECT E.EmpName, D.DeptName
+FROM Employee123 E, Department123 D;
+5. View
+CREATE OR REPLACE VIEW student_view AS
+SELECT studentid, firstname, lastname, phonenumber
+FROM student12;
+SELECT * FROM student_view;
+6. Procedure
+CREATE OR REPLACE PROCEDURE calc_total_avg AS
+    v_sum NUMBER;
+    v_avg NUMBER;
+BEGIN
+    SELECT SUM(marks), AVG(marks)
+    INTO v_sum, v_avg
+    FROM student_marks;
+    DBMS_OUTPUT.PUT_LINE('Total Marks: '||v_sum);
+    DBMS_OUTPUT.PUT_LINE('Average Marks: '||ROUND(v_avg,2));
+END;
+/
+SET SERVEROUTPUT ON;
+BEGIN
+    calc_total_avg;
+END;
+/
+7. Function
+CREATE OR REPLACE FUNCTION check_dept(p_deptno NUMBER)
+RETURN BOOLEAN
+IS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM DEPT
+    WHERE DEPTNO=p_deptno;
+    IF v_count>0 THEN
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error: '||SQLERRM);
+        RETURN FALSE;
+END;
+/
+DECLARE
+    v_deptno NUMBER:=&deptno;
+    v_result BOOLEAN;
+BEGIN
+    v_result:=check_dept(v_deptno);
+    IF v_result THEN
+        DBMS_OUTPUT.PUT_LINE('Department exists.');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Department does not exist.');
+    END IF;
+END;
+/
+8. Exception Handling
+CREATE OR REPLACE FUNCTION display_employee(p_empno NUMBER)
+RETURN BOOLEAN
+IS
+    v_ename EMP.ENAME%TYPE;
+    v_job EMP.JOB%TYPE;
+    v_sal EMP.SAL%TYPE;
+    v_deptno EMP.DEPTNO%TYPE;
+BEGIN
+    SELECT ENAME, JOB, SAL, DEPTNO
+    INTO v_ename, v_job, v_sal, v_deptno
+    FROM EMP
+    WHERE EMPNO=p_empno;
+    DBMS_OUTPUT.PUT_LINE('Employee Number: '||p_empno);
+    DBMS_OUTPUT.PUT_LINE('Employee Name: '||v_ename);
+    DBMS_OUTPUT.PUT_LINE('Job: '||v_job);
+    DBMS_OUTPUT.PUT_LINE('Salary: '||v_sal);
+    DBMS_OUTPUT.PUT_LINE('Department No: '||v_deptno);
+    RETURN TRUE;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('Employee not found.');
+        RETURN FALSE;
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error: '||SQLERRM);
+        RETURN FALSE;
+END;
+/
+DECLARE
+    v_empno NUMBER:=&empno;
+    v_result BOOLEAN;
+BEGIN
+    v_result:=display_employee(v_empno);
+END;
+/
+Page 3
+9. View & Trigger
+CREATE OR REPLACE VIEW LoanDetails AS
+SELECT C.Custid,
+       C.Custname,
+       NVL(H.HomeAmount,0)+NVL(V.VehicleAmount,0)
+       AS TotalLoanAmount
+FROM Customer C
+LEFT JOIN (
+    SELECT Custid, SUM(Amount) HomeAmount
+    FROM HomeLoan
+    GROUP BY Custid
+) H ON C.Custid=H.Custid
+LEFT JOIN (
+    SELECT Custid, SUM(Amount) VehicleAmount
+    FROM VehicleLoan
+    GROUP BY Custid
+) V ON C.Custid=V.Custid;
+SELECT * FROM LoanDetails;
+CREATE OR REPLACE TRIGGER DisplayHomeLoanDetails
+AFTER INSERT ON HomeLoan
+FOR EACH ROW
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('New Home Loan Details');
+    DBMS_OUTPUT.PUT_LINE('Loan ID: '||:NEW.HLoanid);
+    DBMS_OUTPUT.PUT_LINE('Customer ID: '||:NEW.Custid);
+    DBMS_OUTPUT.PUT_LINE('Loan Amount: '||:NEW.Amount);
+END;
+/
