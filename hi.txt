@@ -196,3 +196,897 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('Loan Amount: '||:NEW.Amount);
 END;
 /
+
+
+
+
+## 1. Employee database – DDL and DML
+
+```
+CREATE TABLE Employee (
+    EmpID NUMBER(5) PRIMARY KEY,
+    Name VARCHAR2(30) NOT NULL,
+    Email VARCHAR2(50) UNIQUE,
+    Age NUMBER(3) CHECK (Age >= 18),
+    Salary NUMBER(10,2)
+);
+
+INSERT INTO Employee VALUES (101,'Arun','arun@gmail.com',22,25000);
+INSERT INTO Employee VALUES (102,'Priya','priya@gmail.com',21,30000);
+INSERT INTO Employee VALUES (103,'Kumar','kumar@gmail.com',25,35000);
+
+SELECT * FROM Employee;
+
+UPDATE Employee
+SET Salary = 40000
+WHERE EmpID = 101;
+
+DELETE FROM Employee
+WHERE EmpID = 103;
+
+SELECT * FROM Employee;
+```
+
+## 2. Railway reservation – Subquery
+
+```
+CREATE TABLE Train (
+    Train_No NUMBER PRIMARY KEY,
+    Train_Name VARCHAR2(30),
+    Source VARCHAR2(30),
+    Destination VARCHAR2(30),
+    Fare NUMBER(8,2)
+);
+
+CREATE TABLE Reservation (
+    PNR NUMBER PRIMARY KEY,
+    Passenger_Name VARCHAR2(30),
+    Train_No NUMBER,
+    Seats NUMBER,
+    FOREIGN KEY (Train_No) REFERENCES Train(Train_No)
+);
+
+INSERT INTO Train VALUES (101,'Chennai Express','Chennai','Delhi',1500);
+INSERT INTO Train VALUES (102,'Pandian Express','Chennai','Madurai',500);
+INSERT INTO Train VALUES (103,'Vaigai Express','Chennai','Madurai',600);
+
+INSERT INTO Reservation VALUES (1,'Arun',101,2);
+INSERT INTO Reservation VALUES (2,'Priya',102,3);
+INSERT INTO Reservation VALUES (3,'Kumar',103,1);
+
+SELECT * FROM Train;
+SELECT * FROM Reservation;
+
+SELECT *
+FROM Train
+WHERE Train_No IN (
+    SELECT Train_No FROM Reservation
+);
+```
+
+## 3. Student and Course – Joins
+
+```
+CREATE TABLE Course (
+    Course_ID NUMBER PRIMARY KEY,
+    Course_Name VARCHAR2(30)
+);
+
+CREATE TABLE Student (
+    Student_ID NUMBER PRIMARY KEY,
+    Student_Name VARCHAR2(30),
+    Course_ID NUMBER,
+    FOREIGN KEY (Course_ID) REFERENCES Course(Course_ID)
+);
+
+INSERT INTO Course VALUES (1,'Python');
+INSERT INTO Course VALUES (2,'Java');
+INSERT INTO Course VALUES (3,'C++');
+
+INSERT INTO Student VALUES (101,'Arun',1);
+INSERT INTO Student VALUES (102,'Priya',2);
+INSERT INTO Student VALUES (103,'Kumar',1);
+
+-- INNER JOIN
+SELECT S.Student_Name,C.Course_Name
+FROM Student S
+INNER JOIN Course C
+ON S.Course_ID=C.Course_ID;
+
+-- LEFT JOIN
+SELECT S.Student_Name,C.Course_Name
+FROM Student S
+LEFT JOIN Course C
+ON S.Course_ID=C.Course_ID;
+
+-- RIGHT JOIN
+SELECT S.Student_Name,C.Course_Name
+FROM Student S
+RIGHT JOIN Course C
+ON S.Course_ID=C.Course_ID;
+
+-- FULL OUTER JOIN
+SELECT S.Student_Name,C.Course_Name
+FROM Student S
+FULL OUTER JOIN Course C
+ON S.Course_ID=C.Course_ID;
+```
+
+## 4. Library database
+
+```
+CREATE TABLE Publisher (
+    Name VARCHAR2(30) PRIMARY KEY,
+    Address VARCHAR2(50),
+    Phone VARCHAR2(15)
+);
+
+CREATE TABLE Book (
+    Book_id NUMBER PRIMARY KEY,
+    Title VARCHAR2(50),
+    Publisher_Name VARCHAR2(30),
+    Pub_Year NUMBER(4),
+    No_of_copies NUMBER,
+    FOREIGN KEY (Publisher_Name) REFERENCES Publisher(Name)
+);
+
+CREATE TABLE Book_Authors (
+    Book_id NUMBER,
+    Author_Name VARCHAR2(30),
+    FOREIGN KEY (Book_id) REFERENCES Book(Book_id)
+);
+
+CREATE TABLE Borrower (
+    Borrower_ID NUMBER PRIMARY KEY,
+    Borrower_Name VARCHAR2(30)
+);
+
+CREATE TABLE Book_Loans (
+    Loan_ID NUMBER PRIMARY KEY,
+    Borrower_ID NUMBER,
+    Book_id NUMBER,
+    Date_Out DATE,
+    FOREIGN KEY (Borrower_ID) REFERENCES Borrower(Borrower_ID),
+    FOREIGN KEY (Book_id) REFERENCES Book(Book_id)
+);
+
+-- a) Book details with publisher and author
+SELECT B.Book_id,B.Title,P.Name,A.Author_Name
+FROM Book B
+JOIN Publisher P ON B.Publisher_Name=P.Name
+JOIN Book_Authors A ON B.Book_id=A.Book_id;
+
+-- b) Borrowers who borrowed more than 3 books
+-- between January and June 2017
+SELECT BR.Borrower_ID,BR.Borrower_Name,
+COUNT(*) AS Total_Books
+FROM Borrower BR
+JOIN Book_Loans BL
+ON BR.Borrower_ID=BL.Borrower_ID
+WHERE BL.Date_Out >= DATE '2017-01-01'
+AND BL.Date_Out < DATE '2017-07-01'
+GROUP BY BR.Borrower_ID,BR.Borrower_Name
+HAVING COUNT(*) > 3;
+
+-- c) Delete a book and update related table
+DELETE FROM Book_Authors WHERE Book_id=101;
+DELETE FROM Book_Loans WHERE Book_id=101;
+DELETE FROM Book WHERE Book_id=101;
+```
+
+Note: The question paper does not provide Borrower and Book_Loans schemas. These are the assumed supporting tables for question 4(b).
+
+## 5. Employee table – ALTER, COPY, DELETE, DROP
+
+```
+CREATE TABLE Employee (
+    SNo NUMBER,
+    Name VARCHAR2(30),
+    Designation VARCHAR2(30),
+    Branch VARCHAR2(30)
+);
+
+INSERT INTO Employee VALUES (1,'Arun','Manager','Chennai');
+INSERT INTO Employee VALUES (2,'Priya','Clerk','Madurai');
+INSERT INTO Employee VALUES (3,'Kumar','Analyst','Salem');
+
+-- a) Add salary column
+ALTER TABLE Employee ADD Salary NUMBER(10,2);
+
+-- b) Copy table
+CREATE TABLE Emp AS SELECT * FROM Employee;
+
+-- c) Delete second row
+DELETE FROM Employee WHERE SNo=2;
+
+-- d) Drop table
+DROP TABLE Employee;
+```
+
+## 6. Event, Participant, Prizes and Winners
+
+```
+CREATE TABLE Event (
+    EventID NUMBER PRIMARY KEY,
+    Name VARCHAR2(30),
+    Description VARCHAR2(50),
+    City VARCHAR2(30)
+);
+
+CREATE TABLE Participant (
+    PlayerID NUMBER PRIMARY KEY,
+    Name VARCHAR2(30),
+    EventID NUMBER,
+    Gender CHAR(1),
+    Year NUMBER(4),
+    FOREIGN KEY (EventID) REFERENCES Event(EventID)
+);
+
+CREATE TABLE Prizes (
+    PrizeID NUMBER PRIMARY KEY,
+    Prize_Money NUMBER(10,2),
+    EventID NUMBER,
+    Rank NUMBER,
+    Year NUMBER(4),
+    FOREIGN KEY (EventID) REFERENCES Event(EventID)
+);
+
+CREATE TABLE Winners (
+    PrizeID NUMBER,
+    PlayerID NUMBER,
+    PRIMARY KEY (PrizeID,PlayerID),
+    FOREIGN KEY (PrizeID) REFERENCES Prizes(PrizeID),
+    FOREIGN KEY (PlayerID) REFERENCES Participant(PlayerID)
+);
+
+INSERT INTO Event VALUES (1,'Sports','Annual Sports','Chennai');
+INSERT INTO Participant VALUES (101,'Arun',1,'M',2026);
+INSERT INTO Prizes VALUES (1,10000,1,1,2026);
+INSERT INTO Winners VALUES (1,101);
+
+-- Display records
+SELECT * FROM Event;
+SELECT * FROM Participant;
+SELECT * FROM Prizes;
+SELECT * FROM Winners;
+
+-- Display schema
+DESC Event;
+DESC Participant;
+DESC Prizes;
+DESC Winners;
+
+-- Alter Winners table
+ALTER TABLE Winners ADD Remarks VARCHAR2(30);
+```
+
+## 7. College database
+
+```
+CREATE TABLE Student (
+    RegNo NUMBER PRIMARY KEY,
+    StudName VARCHAR2(30),
+    Address VARCHAR2(50),
+    Phone VARCHAR2(15),
+    Gender CHAR(1),
+    Sem NUMBER,
+    Section CHAR(1)
+);
+
+CREATE TABLE Subject (
+    Subcode NUMBER PRIMARY KEY,
+    Title VARCHAR2(30),
+    Sem NUMBER,
+    Credits NUMBER
+);
+
+CREATE TABLE Marks (
+    RegNo NUMBER,
+    Subcode NUMBER,
+    Test1 NUMBER,
+    Test2 NUMBER,
+    Test3 NUMBER,
+    Finalmark NUMBER,
+    FOREIGN KEY (RegNo) REFERENCES Student(RegNo),
+    FOREIGN KEY (Subcode) REFERENCES Subject(Subcode)
+);
+
+INSERT INTO Student VALUES (1,'Arun','Chennai','9876543210','M',3,'A');
+INSERT INTO Student VALUES (2,'Priya','Chennai','9876543211','F',3,'A');
+INSERT INTO Student VALUES (3,'Kumar','Salem','9876543212','M',4,'B');
+
+INSERT INTO Subject VALUES (101,'DBMS',3,4);
+
+INSERT INTO Marks VALUES (1,101,80,90,70,NULL);
+INSERT INTO Marks VALUES (2,101,75,85,95,NULL);
+
+-- a) Male and female count
+SELECT Sem,Section,Gender,COUNT(*) AS Total
+FROM Student
+GROUP BY Sem,Section,Gender;
+
+-- b) Calculate average of best two marks
+UPDATE Marks
+SET Finalmark =
+(Test1+Test2+Test3-
+LEAST(Test1,Test2,Test3))/2;
+
+SELECT * FROM Marks;
+```
+
+## 8. Account database
+
+```
+CREATE TABLE Account (
+    Account_No NUMBER PRIMARY KEY,
+    Cust_Name VARCHAR2(30),
+    Branch_Name VARCHAR2(30),
+    Account_Balance NUMBER(12,2),
+    Account_Type VARCHAR2(20)
+);
+
+INSERT INTO Account VALUES (101,'Arun','XXXXX',15000,'Savings');
+INSERT INTO Account VALUES (102,'Priya','Chennai',8000,'Current');
+INSERT INTO Account VALUES (103,'Kumar','XXXXX',20000,'Savings');
+
+-- a) Customers of branch XXXXX
+SELECT Cust_Name,Account_No
+FROM Account
+WHERE Branch_Name='XXXXX';
+
+-- b) Balance greater than 10000
+SELECT Cust_Name,Account_Type
+FROM Account
+WHERE Account_Balance>10000;
+
+-- c) Add DOB
+ALTER TABLE Account
+ADD Cust_Date_of_Birth DATE;
+
+-- d) Delete one column
+ALTER TABLE Account
+DROP COLUMN Cust_Date_of_Birth;
+```
+
+## 9. Customer and Order database
+
+```
+CREATE TABLE Customer (
+    C_ID NUMBER PRIMARY KEY,
+    Name VARCHAR2(30),
+    Address VARCHAR2(50),
+    City VARCHAR2(30),
+    Mobile_No VARCHAR2(15)
+);
+
+CREATE TABLE Orders (
+    C_ID NUMBER,
+    P_ID NUMBER,
+    P_Name VARCHAR2(30),
+    P_COST NUMBER(10,2),
+    FOREIGN KEY (C_ID) REFERENCES Customer(C_ID)
+);
+
+INSERT INTO Customer VALUES (1,'Arun','Anna Nagar','Chennai','9876543210');
+INSERT INTO Customer VALUES (2,'Priya','Velachery','Chennai','9876543211');
+
+INSERT INTO Orders VALUES (1,101,'Laptop',50000);
+INSERT INTO Orders VALUES (2,102,'Mouse',700);
+INSERT INTO Orders VALUES (1,103,'Keyboard',1200);
+
+-- a) Customers who ordered products above 500
+SELECT DISTINCT C.Name,C.Address
+FROM Customer C
+JOIN Orders O ON C.C_ID=O.C_ID
+WHERE O.P_COST>500;
+
+-- b) Products costing 1000 or more
+SELECT P_Name
+FROM Orders
+WHERE P_COST>=1000;
+
+-- c) Add Email
+ALTER TABLE Customer ADD Email_id VARCHAR2(50);
+
+-- d) Add Gender
+ALTER TABLE Customer ADD Gender CHAR(1);
+```
+
+## 10. Salesman, Customer and Orders
+
+```
+CREATE TABLE Salesman (
+    Salesman_id NUMBER PRIMARY KEY,
+    Name VARCHAR2(30),
+    City VARCHAR2(30),
+    Commission NUMBER(5,2)
+);
+
+CREATE TABLE Customer (
+    Customer_id NUMBER PRIMARY KEY,
+    Cust_Name VARCHAR2(30),
+    City VARCHAR2(30),
+    Grade NUMBER,
+    Salesman_id NUMBER,
+    FOREIGN KEY (Salesman_id) REFERENCES Salesman(Salesman_id)
+);
+
+CREATE TABLE Orders (
+    Ord_No NUMBER PRIMARY KEY,
+    Purchase_Amt NUMBER(10,2),
+    Ord_Date DATE,
+    Customer_id NUMBER,
+    Salesman_id NUMBER,
+    FOREIGN KEY (Customer_id) REFERENCES Customer(Customer_id),
+    FOREIGN KEY (Salesman_id) REFERENCES Salesman(Salesman_id)
+);
+
+INSERT INTO Salesman VALUES (1,'Arun','Chennai',10);
+INSERT INTO Salesman VALUES (2,'Priya','Madurai',12);
+INSERT INTO Salesman VALUES (3,'Kumar','Salem',15);
+
+INSERT INTO Customer VALUES (101,'Ravi','Chennai',1,1);
+INSERT INTO Customer VALUES (102,'Ram','Chennai',2,1);
+INSERT INTO Customer VALUES (103,'Anu','Madurai',3,2);
+
+INSERT INTO Orders VALUES (1,5000,DATE '2026-01-01',101,1);
+INSERT INTO Orders VALUES (2,6000,DATE '2026-01-02',102,1);
+
+-- a) Salesmen having more than one customer
+SELECT S.Name,S.Salesman_id
+FROM Salesman S
+JOIN Customer C ON S.Salesman_id=C.Salesman_id
+GROUP BY S.Name,S.Salesman_id
+HAVING COUNT(C.Customer_id)>1;
+
+-- b) Salesmen with and without customers in their cities
+SELECT S.Name,S.City,'Has Customers' AS Status
+FROM Salesman S
+WHERE EXISTS (
+    SELECT 1 FROM Customer C
+    WHERE C.Salesman_id=S.Salesman_id
+    AND C.City=S.City
+)
+UNION
+SELECT S.Name,S.City,'No Customers' AS Status
+FROM Salesman S
+WHERE NOT EXISTS (
+    SELECT 1 FROM Customer C
+    WHERE C.Salesman_id=S.Salesman_id
+    AND C.City=S.City
+);
+```
+
+## 11. Employee table – SELECT queries
+
+```
+CREATE TABLE Employees (
+    Employee_Id NUMBER,
+    First_Name VARCHAR2(30),
+    Last_Name VARCHAR2(30),
+    Email VARCHAR2(50),
+    Phone_Number VARCHAR2(15),
+    Hire_Date DATE,
+    Job_Id VARCHAR2(20),
+    Salary NUMBER(10,2),
+    Commission_Pct NUMBER(5,2),
+    Manager_Id NUMBER,
+    Department_Id NUMBER
+);
+
+INSERT INTO Employees VALUES
+(101,'Arun','Kumar','arun@gmail.com','9876543210',
+DATE '2020-01-10','IT',5000,NULL,100,60);
+
+INSERT INTO Employees VALUES
+(102,'Priya','Austin','priya@gmail.com','9876543211',
+DATE '2021-02-10','HR',6000,NULL,100,70);
+
+INSERT INTO Employees VALUES
+(103,'Ravi','Raj','ravi@gmail.com','9876543212',
+DATE '2022-03-10','IT',4500,NULL,101,80);
+
+-- a) Employee ID, name and salary
+SELECT Employee_Id,First_Name,Last_Name,Salary
+FROM Employees;
+
+-- b) Employees under manager 100
+SELECT * FROM Employees
+WHERE Manager_Id=100;
+
+-- c) Salary greater than or equal to 4800
+SELECT First_Name,Last_Name
+FROM Employees
+WHERE Salary>=4800;
+
+-- d) Last name AUSTIN
+SELECT * FROM Employees
+WHERE UPPER(Last_Name)='AUSTIN';
+
+-- e) Employees in departments 60,70,80
+SELECT * FROM Employees
+WHERE Department_Id IN (60,70,80);
+
+-- f) Unique Manager IDs
+SELECT DISTINCT Manager_Id
+FROM Employees;
+```
+
+## 12. Client_master
+
+```
+CREATE TABLE Client_master (
+    ClientNO VARCHAR2(10) PRIMARY KEY,
+    Name VARCHAR2(30),
+    Address VARCHAR2(50),
+    City VARCHAR2(30),
+    State VARCHAR2(30),
+    bal_due NUMBER(10,2)
+);
+
+-- a) Insert five records
+INSERT INTO Client_master VALUES
+('C123','Arun','Anna Nagar','Chennai','Tamil Nadu',6000);
+
+INSERT INTO Client_master VALUES
+('C124','Priya','Velachery','Chennai','Tamil Nadu',4000);
+
+INSERT INTO Client_master VALUES
+('C125','Kumar','Gandhipuram','Coimbatore','Tamil Nadu',7000);
+
+INSERT INTO Client_master VALUES
+('C126','Ravi','Adyar','Chennai','Tamil Nadu',3000);
+
+INSERT INTO Client_master VALUES
+('C127','Anu','Salem Town','Salem','Tamil Nadu',8000);
+
+-- b) Balance due greater than 5000
+SELECT Name FROM Client_master
+WHERE bal_due>5000;
+
+-- c) Update balance
+UPDATE Client_master
+SET bal_due=5100
+WHERE ClientNO='C123';
+
+-- d) Rename table
+RENAME Client_master TO Client12;
+
+-- e) Display heading as BALANCE
+SELECT bal_due AS BALANCE
+FROM Client12;
+```
+
+## 13. Teacher table – Transaction control
+
+```
+CREATE TABLE Teacher (
+    Name VARCHAR2(30),
+    DeptNo NUMBER,
+    DOJ DATE,
+    DeptName VARCHAR2(30),
+    Location VARCHAR2(30),
+    Salary NUMBER(10,2)
+);
+
+-- a) Insert five records
+INSERT INTO Teacher VALUES
+('Arun',1,DATE '2020-01-01','Mathematics','Chennai',30000);
+
+INSERT INTO Teacher VALUES
+('Priya',2,DATE '2021-02-01','Commerce','Chennai',25000);
+
+INSERT INTO Teacher VALUES
+('Kumar',3,DATE '2022-03-01','Mathematics','Salem',35000);
+
+INSERT INTO Teacher VALUES
+('Ravi',4,DATE '2023-04-01','Commerce','Madurai',28000);
+
+INSERT INTO Teacher VALUES
+('Anu',5,DATE '2020-05-01','Science','Chennai',32000);
+
+-- b) 25% increment for Mathematics
+UPDATE Teacher
+SET Salary=Salary*1.25
+WHERE DeptName='Mathematics';
+
+SAVEPOINT A;
+
+-- c) Rollback command
+ROLLBACK TO A;
+
+-- d) 15% increment for Commerce
+UPDATE Teacher
+SET Salary=Salary*1.15
+WHERE DeptName='Commerce';
+
+-- e) Commit command
+COMMIT;
+
+SELECT * FROM Teacher;
+```
+
+Important: `ROLLBACK TO A` only reverses changes made after the savepoint. To demonstrate rollback of the Mathematics increment, place `SAVEPOINT A` before that UPDATE instead.
+
+## 14. Sales table
+
+```
+CREATE TABLE Sales (
+    Sales_No NUMBER PRIMARY KEY,
+    Salesname VARCHAR2(30),
+    Branch VARCHAR2(30),
+    Salesamount NUMBER(10,2),
+    DOB DATE
+);
+
+-- a) Insert five records
+INSERT INTO Sales VALUES
+(1,'Arun','Chennai',50000,DATE '2000-12-21');
+
+INSERT INTO Sales VALUES
+(2,'Priya','Madurai',60000,DATE '2001-05-15');
+
+INSERT INTO Sales VALUES
+(3,'Kumar','Chennai',40000,DATE '1999-12-10');
+
+INSERT INTO Sales VALUES
+(4,'Ravi','Salem',30000,DATE '2002-08-20');
+
+INSERT INTO Sales VALUES
+(5,'Anu','Madurai',70000,DATE '2000-12-05');
+
+-- b) Total sales in each branch
+SELECT Branch,SUM(Salesamount) AS Total_Sales
+FROM Sales
+GROUP BY Branch;
+
+-- c) Average sales in each branch
+SELECT Branch,AVG(Salesamount) AS Average_Sales
+FROM Sales
+GROUP BY Branch;
+
+-- d) Salesmen born in December
+SELECT Salesname,TO_CHAR(DOB,'DD-MON-YY') AS DOB
+FROM Sales
+WHERE TO_CHAR(DOB,'MM')='12';
+
+-- e) Alphabetical order of month
+SELECT Salesname,DOB
+FROM Sales
+ORDER BY TO_CHAR(DOB,'MON');
+```
+
+## 15. Employee salary calculation
+
+```
+CREATE TABLE Emp (
+    EmpNo NUMBER PRIMARY KEY,
+    EmpName VARCHAR2(30),
+    Job VARCHAR2(30),
+    Dept VARCHAR2(30),
+    Basic NUMBER(10,2),
+    DA NUMBER(10,2),
+    HRA NUMBER(10,2),
+    PF NUMBER(10,2),
+    GrossPay NUMBER(10,2),
+    NetPay NUMBER(10,2)
+);
+
+-- a) Insert five records
+INSERT INTO Emp VALUES
+(1,'Arun','Manager','IT',15000,0,0,1000,0,0);
+
+INSERT INTO Emp VALUES
+(2,'Priya','Clerk','HR',8000,0,0,500,0,0);
+
+INSERT INTO Emp VALUES
+(3,'Kumar','Analyst','IT',12000,0,0,800,0,0);
+
+INSERT INTO Emp VALUES
+(4,'Ravi','Clerk','HR',7000,0,0,400,0,0);
+
+INSERT INTO Emp VALUES
+(5,'Anu','Manager','Sales',20000,0,0,1500,0,0);
+
+-- Calculate DA and HRA
+UPDATE Emp
+SET DA=Basic*0.30,
+    HRA=Basic*0.40;
+
+-- Calculate GrossPay and NetPay
+UPDATE Emp
+SET GrossPay=Basic+DA+HRA,
+    NetPay=Basic+DA+HRA-PF;
+
+SELECT * FROM Emp;
+
+-- b) Lowest basic salary in each department
+SELECT *
+FROM Emp E
+WHERE Basic=(
+    SELECT MIN(Basic)
+    FROM Emp
+    WHERE Dept=E.Dept
+);
+
+-- c) Add special allowance if NetPay below 10000
+UPDATE Emp
+SET NetPay=NetPay+1200
+WHERE NetPay<10000;
+
+-- d) GrossPay between 10000 and 20000
+SELECT * FROM Emp
+WHERE GrossPay BETWEEN 10000 AND 20000;
+
+-- e) Employees earning maximum salary
+SELECT * FROM Emp
+WHERE NetPay=(SELECT MAX(NetPay) FROM Emp);
+```
+
+## 16. PL/SQL – Employee payslip
+
+```
+CREATE TABLE Employee (
+    Id NUMBER PRIMARY KEY,
+    Name VARCHAR2(30),
+    Basic_Pay NUMBER(10,2),
+    DOB DATE,
+    Dept VARCHAR2(30)
+);
+
+INSERT INTO Employee VALUES
+(101,'Arun',20000,DATE '2000-01-01','IT');
+
+INSERT INTO Employee VALUES
+(102,'Priya',25000,DATE '2001-02-01','HR');
+
+-- a) Generate payslip
+SET SERVEROUTPUT ON;
+
+ACCEPT eid NUMBER PROMPT 'Enter Employee ID: '
+
+DECLARE
+    v_id NUMBER := &eid;
+    v_name Employee.Name%TYPE;
+    v_basic NUMBER;
+    v_da NUMBER;
+    v_hra NUMBER;
+    v_tax NUMBER;
+    v_ded NUMBER;
+    v_net NUMBER;
+BEGIN
+    SELECT Name,Basic_Pay
+    INTO v_name,v_basic
+    FROM Employee
+    WHERE Id=v_id;
+
+    v_da:=v_basic*0.10;
+    v_hra:=v_basic*0.20;
+    v_tax:=v_basic*0.05;
+    v_ded:=v_basic*0.02;
+
+    v_net:=v_basic+v_da+v_hra-v_tax-v_ded;
+
+    DBMS_OUTPUT.PUT_LINE('EMPLOYEE PAYSLIP');
+    DBMS_OUTPUT.PUT_LINE('Name: '||v_name);
+    DBMS_OUTPUT.PUT_LINE('Basic Pay: '||v_basic);
+    DBMS_OUTPUT.PUT_LINE('DA: '||v_da);
+    DBMS_OUTPUT.PUT_LINE('HRA: '||v_hra);
+    DBMS_OUTPUT.PUT_LINE('Tax: '||v_tax);
+    DBMS_OUTPUT.PUT_LINE('Deduction: '||v_ded);
+    DBMS_OUTPUT.PUT_LINE('Net Pay: '||v_net);
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('Employee not found');
+END;
+/
+```
+
+b) Employee payroll operations
+
+```
+-- Add employee
+INSERT INTO Employee VALUES
+(103,'Kumar',30000,DATE '2002-03-01','IT');
+
+-- Update employee
+UPDATE Employee
+SET Basic_Pay=35000
+WHERE Id=103;
+
+-- Delete employee
+DELETE FROM Employee
+WHERE Id=103;
+
+-- Generate payslip using question 16(a)
+```
+
+## 17. Bank database – Exception handling
+
+```
+CREATE TABLE Bank (
+    Acc_No NUMBER PRIMARY KEY,
+    Name VARCHAR2(30),
+    Balance NUMBER(10,2)
+);
+
+INSERT INTO Bank VALUES (101,'Arun',1000);
+INSERT INTO Bank VALUES (102,'Priya',400);
+INSERT INTO Bank VALUES (103,'Kumar',5000);
+
+-- a) Check balance
+SET SERVEROUTPUT ON;
+
+ACCEPT acc NUMBER PROMPT 'Enter Account Number: '
+
+DECLARE
+    v_acc NUMBER := &acc;
+    v_balance NUMBER;
+BEGIN
+    SELECT Balance
+    INTO v_balance
+    FROM Bank
+    WHERE Acc_No=v_acc;
+
+    IF v_balance<500 THEN
+        DBMS_OUTPUT.PUT_LINE('Low Balance');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Sufficient Balance');
+    END IF;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('Account not found');
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error occurred');
+END;
+/
+```
+
+b) Inventory management database
+
+```
+CREATE TABLE Product (
+    Product_ID NUMBER PRIMARY KEY,
+    Product_Name VARCHAR2(30),
+    Quantity NUMBER,
+    Price NUMBER(10,2)
+);
+
+CREATE TABLE Supplier (
+    Supplier_ID NUMBER PRIMARY KEY,
+    Supplier_Name VARCHAR2(30),
+    Phone VARCHAR2(15)
+);
+
+CREATE TABLE Inventory (
+    Inventory_ID NUMBER PRIMARY KEY,
+    Product_ID NUMBER,
+    Supplier_ID NUMBER,
+    Stock_Date DATE,
+    FOREIGN KEY (Product_ID) REFERENCES Product(Product_ID),
+    FOREIGN KEY (Supplier_ID) REFERENCES Supplier(Supplier_ID)
+);
+
+INSERT INTO Product VALUES (1,'Laptop',10,50000);
+INSERT INTO Product VALUES (2,'Mouse',50,500);
+INSERT INTO Supplier VALUES (101,'ABC Traders','9876543210');
+INSERT INTO Inventory VALUES (1,1,101,SYSDATE);
+
+SELECT * FROM Product;
+SELECT * FROM Supplier;
+SELECT * FROM Inventory;
+```
+
+## 18. Library fine calculation
+
+```
+CREATE TABLE Book (
+    Acc_No NUMBER PRIMARY KEY,
+    Username VARCHAR2(30),
+    BookNo NUMBER,
+    Days NUMBER
+);
+
+INSERT INTO Book VALUES (101,'Arun',1001,5);
+INSERT INTO Book VALUES (102,'Priya',1002,10);
